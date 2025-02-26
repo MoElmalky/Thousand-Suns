@@ -3,16 +3,30 @@ from tkinter import ttk, filedialog
 from song import Song
 import os
 import pygame.mixer as pygm
+from PIL import Image, ImageTk
+import io
 
 
 isplaying = False
 isloaded = False
 timer = 0
 playlist = []
+songs_paths = None
 song_index = 0
-cur_song  = Song('assets/The Requiem.mp3')
+cur_song  = None
 cur_song_cover = None 
 after_id = None
+
+def get_cover_tk(imageData):
+        if not imageData:
+            imageData = "assets/cover.png"
+
+        if isinstance(imageData, bytes):  
+            imageData = io.BytesIO(imageData) 
+        image = Image.open(imageData)
+        image = image.resize((100, 100))
+        image = ImageTk.PhotoImage(image)
+        return image
 
 def pause():
     global isplaying
@@ -24,22 +38,22 @@ def pause():
 
 def play():
     global isplaying,isloaded,timer
-
-    if isloaded:
-        print('Unpaused')
-        pygm.music.unpause()
-    else:
-        print('Playing ' + cur_song.title)
-        pygm.music.load(cur_song.file_path)
-        pygm.music.play()
-        isloaded = True
-        timer = 0
-    if after_id : 
-        root.after_cancel(after_id)
-    isplaying = True
-    teck()
-    pygm.music.set_pos(timer/10)
-    start_pause_button.config(text = '||',command= pause)
+    if cur_song:
+        if isloaded:
+            print('Unpaused')
+            pygm.music.unpause()
+        else:
+            print('Playing ' + cur_song.title)
+            pygm.music.load(cur_song.file_path)
+            pygm.music.play()
+            isloaded = True
+            timer = 0
+        if after_id : 
+            root.after_cancel(after_id)
+        isplaying = True
+        teck()
+        pygm.music.set_pos(timer/10)
+        start_pause_button.config(text = '||',command= pause)
 
 def update_timer(timer_):
     timer_sec = (timer_ % 600) // 10
@@ -59,10 +73,19 @@ def teck():
 
 def on_pos_change(value):
     global timer
-    if isplaying:
-        pygm.music.set_pos(float(value))
     timer = float(value)*10
     update_timer(timer)
+
+def on_slider_release(e):
+    print('Slider Released!')
+    if isplaying:
+        pygm.music.unpause()
+        pygm.music.set_pos(float(timer)/10)
+
+def on_slider_press(e):
+    print('Slider Pressed!')
+    if isplaying:
+        pygm.music.pause()
 
 def on_volume_change(value):
     pygm.music.set_volume(float(value)/10)
@@ -88,7 +111,7 @@ def add_folder():
             playlist.append(Song(file))
 
         cur_song = playlist[0]
-        cur_song_cover = cur_song.get_cover_tk()
+        cur_song_cover = get_cover_tk(cur_song.cover_data)
         update_timer(timer)
         update_song()
         isloaded = False
@@ -96,11 +119,11 @@ def add_folder():
 def previse_song():
     global cur_song, song_index, isloaded, cur_song_cover
 
-    if playlist:
+    if len(playlist)>1:
         pygm.music.stop()
         song_index = song_index - 1 if song_index > 0 else len(playlist)-1
         cur_song = playlist[song_index]
-        cur_song_cover = cur_song.get_cover_tk()
+        cur_song_cover = get_cover_tk(cur_song.cover_data)
         isloaded = False
         play()
         update_song()
@@ -108,11 +131,11 @@ def previse_song():
 def next_song():
     global cur_song, song_index, isloaded, cur_song_cover
 
-    if playlist:
+    if len(playlist)>1:
         pygm.music.stop()
         song_index = song_index + 1 if song_index < len(playlist) - 1 else 0
         cur_song = playlist[song_index]
-        cur_song_cover = cur_song.get_cover_tk()
+        cur_song_cover = get_cover_tk(cur_song.cover_data)
         isloaded = False
         play()
         update_song()
@@ -123,6 +146,13 @@ def update_song():
     song_duration.config(text = f"{int(cur_song.duration//60):02}:{round(cur_song.duration % 60):02}")
     song_cover.config(image=cur_song_cover)
     prograss_bar.config(to=round(cur_song.duration))
+    get_lrc()
+
+def get_lrc():
+    if cur_song and os.path.isfile(cur_song.lrc):
+        with open(cur_song.lrc) as file:
+            lines = file.readlines()
+        lrc_display.config(text=lines[0])
 
 
 
@@ -130,7 +160,7 @@ def update_song():
 #root
 root = tk.Tk()
 root.title('Thousand Suns')
-root.geometry("600x900")
+root.geometry("1200x900")
 
 #Top Bar
 top_bar = tk.Frame(root,bg='black',height=100)
@@ -141,26 +171,30 @@ top_bar.pack(side='top',fill='x')
 body = tk.Frame(root,bg = 'blue')
 body.pack(side='top',fill='both',expand=True)
 
-#Bottom Bar
-bottom_bar = tk.Frame(root, bg = 'black')
-bottom_bar.pack(side='bottom',fill='x')
+#Temp Lrc Display
+lrc_display = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'white')
+lrc_display.pack(side='top')
 
 #Select Folder Button
 folder_icon = tk.PhotoImage(file="assets/folder_icon.png").subsample(2,2)
 select_folder_button = tk.Button(top_bar,image = folder_icon,text='Folder',command= add_folder)
 select_folder_button.pack(side='left')
 
+#Bottom Bar
+bottom_bar = tk.Frame(root, bg = 'black')
+bottom_bar.pack(side='bottom',fill='x')
+
 #Cover Image
-cur_song_cover = cur_song.get_cover_tk()
+cur_song_cover = get_cover_tk(cur_song.cover_data) if cur_song else get_cover_tk("assets/cover.png")
 song_cover = tk.Label(bottom_bar, image=cur_song_cover)
 song_cover.pack(side="left")
 
 #Song Title And Artist
 song_details = tk.Frame(bottom_bar, bg = 'black')
 song_details.pack(side='left',padx=5,pady=20)
-song_title = tk.Label(song_details,text=cur_song.title,font=("Arial", 12, "bold"), bg = 'black', fg = 'white')
+song_title = tk.Label(song_details,text=cur_song.title if cur_song else "None",font=("Arial", 12, "bold"), bg = 'black', fg = 'white')
 song_title.pack(side='top')
-song_artist = tk.Label(song_details,text=cur_song.artist,font=("Arial", 8), bg = 'black', fg = 'gray')
+song_artist = tk.Label(song_details,text=cur_song.artist if cur_song else "None",font=("Arial", 8), bg = 'black', fg = 'gray')
 song_artist.pack(side='left')
 
 #Control Frame
@@ -191,12 +225,16 @@ nxt_song_button.pack(side='left',padx=10)
 cur_time = tk.Label(prograss_panal,text='00:00',font=('Arial',7),fg='lightgray',bg='black')
 cur_time.pack(side='left',padx=5)
 
+cur_song_duration = cur_song.duration if cur_song else 0
+
 #Progress Bar
-prograss_bar = ttk.Scale(prograss_panal,to=round(cur_song.duration),command=on_pos_change)
+prograss_bar = ttk.Scale(prograss_panal,to=round(cur_song_duration),command=on_pos_change)
 prograss_bar.pack(side='left',expand=True,fill='x')
+prograss_bar.bind("<ButtonRelease-1>", on_slider_release)
+prograss_bar.bind("<ButtonPress-1>", on_slider_press)
 
 #Song Duration
-song_duration = tk.Label(prograss_panal,text=f"{int(cur_song.duration // 60):02}:{round(cur_song.duration % 60):02}",font=('Arial',7),fg='lightgray',bg='black')
+song_duration = tk.Label(prograss_panal,text=f"{int((cur_song_duration // 60)):02}:{round(cur_song_duration % 60):02}",font=('Arial',7),fg='lightgray',bg='black')
 song_duration.pack(side='left',padx=5)
 
 #Volume Bar
