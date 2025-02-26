@@ -6,6 +6,7 @@ import os
 import pygame.mixer as pygm
 from PIL import Image, ImageTk
 import io
+import re
 
 
 isplaying = False
@@ -13,6 +14,8 @@ timer = 0
 playlist = []
 song_index = 0
 cur_song  = None
+song_lrc = []
+lrc_time = []
 cur_song_cover = None 
 after_id = None
 
@@ -163,10 +166,25 @@ def update_song():
     get_lrc()
 
 def get_lrc():
+    global song_lrc, lrc_time
     if cur_song and os.path.isfile(cur_song.lrc):
         with open(cur_song.lrc) as file:
             lines = file.readlines()
-        lrc_display.config(text=lines[0])
+        for line in lines:
+            match = re.match(r"\[(\d{2}):(\d{2}.\d{2})\]\s(.+)", line)
+            if match:
+                min = match.group(1)
+                sec = match.group(2)
+                lyrics = match.group(3)
+                time = (int(min) * 60 + float(sec)) * 10
+                song_lrc.append(lyrics)
+                lrc_time.append(time)
+
+def get_cur_lrc(time):
+    if song_lrc:
+        pass
+            
+
 
 
 
