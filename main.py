@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
 from song import Song
+from tooltip import Tooltip
 import os
 import pygame.mixer as pygm
 from PIL import Image, ImageTk
@@ -8,10 +9,8 @@ import io
 
 
 isplaying = False
-isloaded = False
 timer = 0
 playlist = []
-songs_paths = None
 song_index = 0
 cur_song  = None
 cur_song_cover = None 
@@ -31,23 +30,14 @@ def get_cover_tk(imageData):
 def pause():
     global isplaying
     if isplaying:
-        print('Paused')
         pygm.music.pause()
         isplaying = False
         start_pause_button.config(text = '>',command= play)
 
 def play():
-    global isplaying,isloaded,timer
-    if cur_song:
-        if isloaded:
-            print('Unpaused')
-            pygm.music.unpause()
-        else:
-            print('Playing ' + cur_song.title)
-            pygm.music.load(cur_song.file_path)
-            pygm.music.play()
-            isloaded = True
-            timer = 0
+    global isplaying
+    if cur_song: 
+        pygm.music.unpause()
         if after_id : 
             root.after_cancel(after_id)
         isplaying = True
@@ -55,16 +45,25 @@ def play():
         pygm.music.set_pos(timer/10)
         start_pause_button.config(text = '||',command= pause)
 
+def load_song():
+    global timer
+    print(cur_song.title + ' Loaded!')
+    pygm.music.load(cur_song.file_path)
+    pygm.music.play()
+    pygm.music.pause()
+    timer = 0
+
+
 def update_timer(timer_):
     timer_sec = (timer_ % 600) // 10
     timer_min = timer_ // 600
     cur_time.config(text=f"{int(timer_min):02}:{round(timer_sec):02}")
+    prograss_bar.config(value=timer/10)
 
 def teck():
     global timer ,after_id
     if isplaying:
         timer += 1
-        prograss_bar.config(value=timer/10)
         update_timer(timer)
         if timer/10 > cur_song.duration:
             next_song()
@@ -77,22 +76,23 @@ def on_pos_change(value):
     update_timer(timer)
 
 def on_slider_release(e):
-    print('Slider Released!')
     if isplaying:
         pygm.music.unpause()
         pygm.music.set_pos(float(timer)/10)
+        teck()
 
 def on_slider_press(e):
-    print('Slider Pressed!')
     if isplaying:
         pygm.music.pause()
+        if after_id:
+            root.after_cancel(after_id)
 
 def on_volume_change(value):
     pygm.music.set_volume(float(value)/10)
 
 def add_folder():
 
-    global cur_song , isloaded ,song_index, cur_song_cover
+    global cur_song ,song_index
 
     pause()
 
@@ -111,39 +111,53 @@ def add_folder():
             playlist.append(Song(file))
 
         cur_song = playlist[0]
-        cur_song_cover = get_cover_tk(cur_song.cover_data)
+        load_song()
         update_timer(timer)
         update_song()
-        isloaded = False
     
 def previse_song():
-    global cur_song, song_index, isloaded, cur_song_cover
+    global cur_song, song_index, timer
 
     if len(playlist)>1:
         pygm.music.stop()
         song_index = song_index - 1 if song_index > 0 else len(playlist)-1
         cur_song = playlist[song_index]
-        cur_song_cover = get_cover_tk(cur_song.cover_data)
-        isloaded = False
-        play()
+        load_song()
         update_song()
+        update_timer(timer)
+        if isplaying:
+            play()
+       
 
 def next_song():
-    global cur_song, song_index, isloaded, cur_song_cover
+    global cur_song, song_index, timer
 
     if len(playlist)>1:
         pygm.music.stop()
         song_index = song_index + 1 if song_index < len(playlist) - 1 else 0
         cur_song = playlist[song_index]
-        cur_song_cover = get_cover_tk(cur_song.cover_data)
-        isloaded = False
-        play()
+        load_song()
         update_song()
+        update_timer(timer)
+        if isplaying:
+            play()
 
 def update_song():
-    song_title.config(text=cur_song.title)
-    song_artist.config(text=cur_song.artist)
+    global cur_song_cover
+    max_title_length = 18
+    max_artist_length = 13
+    song_title_tooltip.text = cur_song.title
+    song_artist_tooltip.text = cur_song.artist
+    title = (cur_song.title + ' ' * (max_title_length - len(cur_song.title)))\
+        if max_title_length >= len(cur_song.title) else\
+        cur_song.title[:max_title_length-3]+'...'
+    artist = (cur_song.artist + ' ' * (max_artist_length - len(cur_song.artist)))\
+        if max_artist_length >= len(cur_song.artist) else\
+        cur_song.artist[:max_artist_length-3]+'...'
+    song_title.config(text=title)
+    song_artist.config(text=artist)
     song_duration.config(text = f"{int(cur_song.duration//60):02}:{round(cur_song.duration % 60):02}")
+    cur_song_cover = get_cover_tk(cur_song.cover_data)
     song_cover.config(image=cur_song_cover)
     prograss_bar.config(to=round(cur_song.duration))
     get_lrc()
@@ -192,10 +206,13 @@ song_cover.pack(side="left")
 #Song Title And Artist
 song_details = tk.Frame(bottom_bar, bg = 'black')
 song_details.pack(side='left',padx=5,pady=20)
-song_title = tk.Label(song_details,text=cur_song.title if cur_song else "None",font=("Arial", 12, "bold"), bg = 'black', fg = 'white')
+song_title = tk.Label(song_details,text=cur_song.title if cur_song else "None",font=("Arial", 12, "bold"), bg = 'black', fg = 'white',width=15,anchor='w')
 song_title.pack(side='top')
-song_artist = tk.Label(song_details,text=cur_song.artist if cur_song else "None",font=("Arial", 8), bg = 'black', fg = 'gray')
+song_title_tooltip = Tooltip(song_title,'Song Title!')
+
+song_artist = tk.Label(song_details,text=cur_song.artist if cur_song else "None",font=("Arial", 8), bg = 'black', fg = 'gray',anchor='w')
 song_artist.pack(side='left')
+song_artist_tooltip = Tooltip(song_artist,'Song Artist!')
 
 #Control Frame
 control_frame = tk.Frame(bottom_bar,bg='black')
