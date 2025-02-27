@@ -15,6 +15,7 @@ playlist = []
 song_index = 0
 cur_song  = None
 song_lrc = []
+lrc_index = -1
 lrc_time = []
 cur_song_cover = None 
 after_id = None
@@ -72,6 +73,8 @@ def teck():
             next_song()
             root.after_cancel(after_id)
         after_id = root.after(100,teck)
+        if song_lrc:
+            update_lrc()
 
 def on_pos_change(value):
     global timer
@@ -83,6 +86,9 @@ def on_slider_release(e):
         pygm.music.unpause()
         pygm.music.set_pos(float(timer)/10)
         teck()
+    if song_lrc:
+        get_cur_lrc()
+        update_lrc_display()
 
 def on_slider_press(e):
     if isplaying:
@@ -166,12 +172,15 @@ def update_song():
     get_lrc()
 
 def get_lrc():
-    global song_lrc, lrc_time
+    global song_lrc, lrc_time, lrc_index
+    lrc_index = -1
+    song_lrc = []
+    lrc_time = []
     if cur_song and os.path.isfile(cur_song.lrc):
         with open(cur_song.lrc) as file:
             lines = file.readlines()
         for line in lines:
-            match = re.match(r"\[(\d{2}):(\d{2}.\d{2})\]\s(.+)", line)
+            match = re.match(r"\[(\d{2}):(\d{2}.\d{2})\]\s(.*)", line)
             if match:
                 min = match.group(1)
                 sec = match.group(2)
@@ -179,14 +188,31 @@ def get_lrc():
                 time = (int(min) * 60 + float(sec)) * 10
                 song_lrc.append(lyrics)
                 lrc_time.append(time)
-
-def get_cur_lrc(time):
     if song_lrc:
-        pass
-            
+        update_lrc_display()
+
+def get_cur_lrc():
+    global lrc_index
+    for i in range(len(lrc_time)):
+        if timer < lrc_time[i]:
+            lrc_index = max(-1,i-1)
+            break
 
 
+def update_lrc():
+    global lrc_index
+    if lrc_index+1<len(lrc_time):
+        if timer >= lrc_time[lrc_index+1]:
+            lrc_index += 1
+            update_lrc_display()
 
+def update_lrc_display():
+    lrc_display_1.config(text=(song_lrc[lrc_index-2])if lrc_index-2>=0 else '')
+    lrc_display_2.config(text=(song_lrc[lrc_index-1])if lrc_index-1>=0 else '')
+    lrc_display_3.config(text=(song_lrc[lrc_index])  if lrc_index>=0 else '')
+    lrc_display_4.config(text=(song_lrc[lrc_index+1])if lrc_index+1<len(song_lrc) else '')
+    lrc_display_5.config(text=(song_lrc[lrc_index+2])if lrc_index+2<len(song_lrc) else '')
+    lrc_display_6.config(text=(song_lrc[lrc_index+3])if lrc_index+3<len(song_lrc) else '')
 
 
 #root
@@ -203,9 +229,24 @@ top_bar.pack(side='top',fill='x')
 body = tk.Frame(root,bg = 'blue')
 body.pack(side='top',fill='both',expand=True)
 
-#Temp Lrc Display
-lrc_display = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'white')
-lrc_display.pack(side='top')
+#Lrc Display
+lrc_display_1 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_1.pack(side='top',pady=20)
+
+lrc_display_2 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_2.pack(side='top',pady=20)
+
+lrc_display_3 = tk.Label(body,text='lrc Display',font=("Arial", 18, "bold"),bg = 'blue', fg = 'white')
+lrc_display_3.pack(side='top',pady=20)
+
+lrc_display_4 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_4.pack(side='top',pady=20)
+
+lrc_display_5 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_5.pack(side='top',pady=20)
+
+lrc_display_6 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_6.pack(side='top',pady=20)
 
 #Select Folder Button
 folder_icon = tk.PhotoImage(file="assets/folder_icon.png").subsample(2,2)
