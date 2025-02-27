@@ -196,7 +196,8 @@ def get_cur_lrc():
     for i in range(len(lrc_time)):
         if timer < lrc_time[i]:
             lrc_index = max(-1,i-1)
-            break
+            return
+    lrc_index = len(lrc_time) - 1
 
 
 def update_lrc():
