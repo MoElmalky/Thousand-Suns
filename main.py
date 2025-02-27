@@ -231,23 +231,23 @@ body = tk.Frame(root,bg = 'blue')
 body.pack(side='top',fill='both',expand=True)
 
 #Lrc Display
-lrc_display_1 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_1.pack(side='top',pady=20)
+lrc_display_1 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_1.pack(side='top',pady=40)
 
-lrc_display_2 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_2.pack(side='top',pady=20)
+lrc_display_2 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_2.pack(side='top',pady=40)
 
-lrc_display_3 = tk.Label(body,text='lrc Display',font=("Arial", 18, "bold"),bg = 'blue', fg = 'white')
-lrc_display_3.pack(side='top',pady=20)
+lrc_display_3 = tk.Label(body,text='',font=("Arial", 24, "bold"),bg = 'blue', fg = 'white')
+lrc_display_3.pack(side='top',pady=40)
 
-lrc_display_4 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_4.pack(side='top',pady=20)
+lrc_display_4 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_4.pack(side='top',pady=40)
 
-lrc_display_5 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_5.pack(side='top',pady=20)
+lrc_display_5 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_5.pack(side='top',pady=40)
 
-lrc_display_6 = tk.Label(body,text='lrc Display',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_6.pack(side='top',pady=20)
+lrc_display_6 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
+lrc_display_6.pack(side='top',pady=40)
 
 #Select Folder Button
 folder_icon = tk.PhotoImage(file="assets/folder_icon.png").subsample(2,2)
