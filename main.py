@@ -19,6 +19,8 @@ lrc_index = -1
 lrc_time = []
 cur_song_cover = None 
 after_id = None
+num_lines = 6
+lrc_displays = []
 
 def get_cover_tk(imageData):
         if not imageData:
@@ -208,18 +210,15 @@ def update_lrc():
             update_lrc_display()
 
 def update_lrc_display():
-    lrc_display_1.config(text=(song_lrc[lrc_index-2])if lrc_index-2>=0 else '')
-    lrc_display_2.config(text=(song_lrc[lrc_index-1])if lrc_index-1>=0 else '')
-    lrc_display_3.config(text=(song_lrc[lrc_index])  if lrc_index>=0 else '')
-    lrc_display_4.config(text=(song_lrc[lrc_index+1])if lrc_index+1<len(song_lrc) else '')
-    lrc_display_5.config(text=(song_lrc[lrc_index+2])if lrc_index+2<len(song_lrc) else '')
-    lrc_display_6.config(text=(song_lrc[lrc_index+3])if lrc_index+3<len(song_lrc) else '')
+    for i in range(num_lines):
+        lrc_displays[i].config(text=(song_lrc[lrc_index-2+i])if lrc_index-2+i>=0 and lrc_index-2+i<len(song_lrc) else '')
 
 
 #root
 root = tk.Tk()
 root.title('Thousand Suns')
-root.geometry("1200x900")
+root.state("zoomed")
+root.resizable(False, False)
 
 #Top Bar
 top_bar = tk.Frame(root,bg='black',height=100)
@@ -230,24 +229,18 @@ top_bar.pack(side='top',fill='x')
 body = tk.Frame(root,bg = 'blue')
 body.pack(side='top',fill='both',expand=True)
 
-#Lrc Display
-lrc_display_1 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_1.pack(side='top',pady=40)
+#lrc Display
+tk.Frame(body,bg='blue').pack(side="top", expand=True)
 
-lrc_display_2 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_2.pack(side='top',pady=40)
+for i in range(num_lines):
+    lrc_display = tk.Label(body,text=f'{i}',font=("Arial", 24 if i == 2 else  16, "bold"),bg = 'blue', fg = 'white' if i == 2 else  'gray')
+    lrc_display.pack(side="top", expand=True)
+    lrc_displays.append(lrc_display)
+    
+    if i < num_lines - 1:
+        tk.Frame(body,bg='blue').pack(side="top", expand=True)
 
-lrc_display_3 = tk.Label(body,text='',font=("Arial", 24, "bold"),bg = 'blue', fg = 'white')
-lrc_display_3.pack(side='top',pady=40)
-
-lrc_display_4 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_4.pack(side='top',pady=40)
-
-lrc_display_5 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_5.pack(side='top',pady=40)
-
-lrc_display_6 = tk.Label(body,text='',font=("Arial", 16, "bold"),bg = 'blue', fg = 'gray')
-lrc_display_6.pack(side='top',pady=40)
+tk.Frame(body,bg='blue').pack(side="top", expand=True)
 
 #Select Folder Button
 folder_icon = tk.PhotoImage(file="assets/folder_icon.png").subsample(2,2)
