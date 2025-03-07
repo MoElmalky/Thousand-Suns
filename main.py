@@ -7,12 +7,17 @@ import pygame.mixer as pygm
 from PIL import Image, ImageTk
 import io
 import re
+import random
 
 
 isplaying = False
+isshuffle = False
 timer = 0
+directories = []
+played_songs = []
 playlist = []
 song_index = 0
+songs_counter = 0
 cur_song  = None
 song_lrc = []
 lrc_index = -1
@@ -32,6 +37,20 @@ def get_cover_tk(imageData):
         image = image.resize((100, 100))
         image = ImageTk.PhotoImage(image)
         return image
+
+def toggle_shuffle():
+    global isshuffle
+    isshuffle = not isshuffle
+    if isshuffle:
+        toggle_shuffle_button.config(relief='sunken')
+    else:
+        toggle_shuffle_button.config(relief='raised')
+
+def toggle_play(_):
+    if isplaying:
+        pause()
+    else:
+        play()
 
 def pause():
     global isplaying
@@ -53,7 +72,6 @@ def play():
 
 def load_song():
     global timer
-    print(cur_song.title + ' Loaded!')
     pygm.music.load(cur_song.file_path)
     pygm.music.play()
     pygm.music.pause()
@@ -100,6 +118,22 @@ def on_slider_press(e):
 
 def on_volume_change(value):
     pygm.music.set_volume(float(value)/10)
+    
+def volume_up():
+    volume = pygm.music.get_volume()
+    if volume < 1:
+        volume += .1
+        volume = volume if volume<=1 else 1
+    pygm.music.set_volume(volume)
+    volume_bar.config(value=volume*10)
+
+def volume_down():
+    volume = pygm.music.get_volume()
+    if volume > 0:
+        volume -= .1
+        volume = volume if volume>=0 else 0
+    pygm.music.set_volume(volume)
+    volume_bar.config(value=volume*10)
 
 def add_folder():
 
@@ -111,7 +145,6 @@ def add_folder():
     if folder_selected:
         pygm.music.stop()
         playlist.clear()
-        song_index = 0
         matching_files = [
             os.path.join(folder_selected, file)
             for file in os.listdir(folder_selected)
@@ -120,38 +153,74 @@ def add_folder():
 
         for file in matching_files:
             playlist.append(Song(file))
-
-        cur_song = playlist[0]
+        song_index = random.randrange(len(playlist)) if isshuffle else 0
+        cur_song = playlist[song_index]
+        played_songs.append(song_index)
         load_song()
         update_timer(timer)
         update_song()
     
 def previse_song():
-    global cur_song, song_index, timer
+    global cur_song, song_index, timer, songs_counter
 
-    if len(playlist)>1:
+    if len(playlist)>1 and songs_counter != 0:
         pygm.music.stop()
-        song_index = song_index - 1 if song_index > 0 else len(playlist)-1
+        songs_counter -= 1
+        song_index = played_songs[songs_counter]
         cur_song = playlist[song_index]
         load_song()
         update_song()
         update_timer(timer)
+        print(f'BACK:Playing {cur_song.title} at {songs_counter},len{len(played_songs)}')
         if isplaying:
             play()
        
 
 def next_song():
-    global cur_song, song_index, timer
-
-    if len(playlist)>1:
-        pygm.music.stop()
-        song_index = song_index + 1 if song_index < len(playlist) - 1 else 0
-        cur_song = playlist[song_index]
-        load_song()
-        update_song()
-        update_timer(timer)
-        if isplaying:
-            play()
+    global cur_song, song_index, timer, songs_counter
+    pygm.music.stop()
+    if len(playlist)>1: 
+        if songs_counter < len(playlist) - 1:
+            songs_counter += 1
+            if isshuffle:
+                if songs_counter<=len(played_songs)-1:
+                    song_index = played_songs[songs_counter]
+                    print('Playing Old Song again!')
+                else:
+                    print('Chosing a new Song!')
+                    song_index = random.choice([
+                        i
+                        for i in range(len(playlist))
+                        if i not in played_songs
+                    ])
+                    played_songs.append(song_index)
+            else:
+                if song_index<len(playlist)-1:
+                    song_index += 1
+                    played_songs.append(song_index)
+                else:
+                    new_playlist()
+        elif songs_counter >= len(playlist)-1 or (song_index >= len(playlist)-1 and not isshuffle):
+            new_playlist()
+    cur_song = playlist[song_index]
+    load_song()
+    update_song()
+    update_timer(timer)
+    print(f'NEXT:Playing {cur_song.title} at {songs_counter},len{len(played_songs)}')
+    if isplaying:
+        play()
+        
+def new_playlist():
+    global songs_counter,song_index
+    print('New Playlist')
+    played_songs.clear()
+    songs_counter = 0
+    song_index = random.choice([
+            i
+            for i in range(len(playlist))
+            if i not in played_songs
+        ]) if isshuffle else 0
+    played_songs.append(song_index)
 
 def update_song():
     global cur_song_cover
@@ -190,6 +259,8 @@ def get_lrc():
                 time = (int(min) * 60 + float(sec)) * 10
                 song_lrc.append(lyrics)
                 lrc_time.append(time)
+    for i in range(num_lines):
+        lrc_displays[i].config(text='')
     if song_lrc:
         update_lrc_display()
 
@@ -219,6 +290,12 @@ root = tk.Tk()
 root.title('Thousand Suns')
 root.state("zoomed")
 root.resizable(False, False)
+root.bind('<space>',toggle_play)
+root.bind('<Left>',lambda event:previse_song())
+root.bind('<Right>',lambda event:next_song())
+root.bind('<Up>',lambda event:volume_up())
+root.bind('<Down>',lambda event:volume_down())
+root.bind('s',lambda event:toggle_shuffle())
 
 #Top Bar
 top_bar = tk.Frame(root,bg='black',height=100)
@@ -290,6 +367,10 @@ start_pause_button.pack(side='left',padx=20)
 #Next Song Button
 nxt_song_button = tk.Button(control_panal,text = '>|' , command = next_song )
 nxt_song_button.pack(side='left',padx=10)
+
+#Toggle Shuffle Button
+toggle_shuffle_button = tk.Button(control_panal,text = 'S' , command= toggle_shuffle)
+toggle_shuffle_button.pack(side='left',padx=20)
 
 #Timer
 cur_time = tk.Label(prograss_panal,text='00:00',font=('Arial',7),fg='lightgray',bg='black')
