@@ -8,7 +8,14 @@ from PIL import Image, ImageTk
 import io
 import re
 import random
+import sys
 
+ASSETS_DIR = None
+
+if getattr(sys, 'frozen', False):
+    ASSETS_DIR = sys._MEIPASS
+else:
+    ASSETS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 isplaying = False
 isshuffle = False
@@ -29,7 +36,7 @@ lrc_displays = []
 
 def get_cover_tk(imageData):
         if not imageData:
-            imageData = "assets/cover.png"
+            imageData = ASSETS_DIR + "\\assets\\cover.png"
 
         if isinstance(imageData, bytes):  
             imageData = io.BytesIO(imageData) 
@@ -320,7 +327,7 @@ for i in range(num_lines):
 tk.Frame(body,bg='blue').pack(side="top", expand=True)
 
 #Select Folder Button
-folder_icon = tk.PhotoImage(file="assets/folder_icon.png").subsample(2,2)
+folder_icon = tk.PhotoImage(file=ASSETS_DIR +"\\assets\\folder_icon.png").subsample(2,2)
 select_folder_button = tk.Button(top_bar,image = folder_icon,text='Folder',command= add_folder)
 select_folder_button.pack(side='left')
 
@@ -329,7 +336,7 @@ bottom_bar = tk.Frame(root, bg = 'black')
 bottom_bar.pack(side='bottom',fill='x')
 
 #Cover Image
-cur_song_cover = get_cover_tk(cur_song.cover_data) if cur_song else get_cover_tk("assets/cover.png")
+cur_song_cover = get_cover_tk(cur_song.cover_data) if cur_song else get_cover_tk(ASSETS_DIR +"\\assets\\cover.png")
 song_cover = tk.Label(bottom_bar, image=cur_song_cover)
 song_cover.pack(side="left")
 
