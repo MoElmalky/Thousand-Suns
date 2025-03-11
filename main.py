@@ -9,6 +9,7 @@ import io
 import re
 import random
 import sys
+from pynput import keyboard
 
 ASSETS_DIR = None
 
@@ -53,7 +54,7 @@ def toggle_shuffle():
     else:
         toggle_shuffle_button.config(relief='raised')
 
-def toggle_play(_):
+def toggle_play():
     if isplaying:
         pause()
     else:
@@ -167,7 +168,7 @@ def add_folder():
         update_timer(timer)
         update_song()
     
-def previse_song():
+def previous_song():
     global cur_song, song_index, timer, songs_counter
 
     if len(playlist)>1 and songs_counter != 0:
@@ -178,7 +179,6 @@ def previse_song():
         load_song()
         update_song()
         update_timer(timer)
-        print(f'BACK:Playing {cur_song.title} at {songs_counter},len{len(played_songs)}')
         if isplaying:
             play()
        
@@ -192,9 +192,7 @@ def next_song():
             if isshuffle:
                 if songs_counter<=len(played_songs)-1:
                     song_index = played_songs[songs_counter]
-                    print('Playing Old Song again!')
                 else:
-                    print('Chosing a new Song!')
                     song_index = random.choice([
                         i
                         for i in range(len(playlist))
@@ -213,13 +211,11 @@ def next_song():
     load_song()
     update_song()
     update_timer(timer)
-    print(f'NEXT:Playing {cur_song.title} at {songs_counter},len{len(played_songs)}')
     if isplaying:
         play()
         
 def new_playlist():
     global songs_counter,song_index
-    print('New Playlist')
     played_songs.clear()
     songs_counter = 0
     song_index = random.choice([
@@ -291,14 +287,25 @@ def update_lrc_display():
     for i in range(num_lines):
         lrc_displays[i].config(text=(song_lrc[lrc_index-2+i])if lrc_index-2+i>=0 and lrc_index-2+i<len(song_lrc) else '')
 
+def on_media_press(key):
+    try:
+        if key == keyboard.Key.media_play_pause:
+            toggle_play()
+        elif key == keyboard.Key.media_previous:
+            previous_song()
+        elif key == keyboard.Key.media_next:
+            next_song()
+    except AttributeError:
+        pass
+
 
 #root
 root = tk.Tk()
 root.title('Thousand Suns')
 root.state("zoomed")
 root.resizable(False, False)
-root.bind('<space>',toggle_play)
-root.bind('<Left>',lambda event:previse_song())
+root.bind('<space>',lambda event:toggle_play())
+root.bind('<Left>',lambda event:previous_song())
 root.bind('<Right>',lambda event:next_song())
 root.bind('<Up>',lambda event:volume_up())
 root.bind('<Down>',lambda event:volume_down())
@@ -364,7 +371,7 @@ prograss_panal = tk.Frame(control_frame,bg = 'black')
 prograss_panal.pack(side='top',fill='x',expand=True,padx=20)
 
 #Previous Song Button
-prv_song_button = tk.Button(control_panal,text = '|<',command = previse_song)
+prv_song_button = tk.Button(control_panal,text = '|<',command = previous_song)
 prv_song_button.pack(side='left',padx=10)
 
 #Start/Pause Button
@@ -401,4 +408,6 @@ volume_bar.pack(side='right',padx=20)
 
 
 pygm.init()
+listener = keyboard.Listener(on_press=on_media_press)
+listener.start()
 root.mainloop()
