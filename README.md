@@ -7,7 +7,7 @@ A lightweight music player with **lyric display** and **shuffle mode**.
 ✅ **Play your favorite songs** with a simple interface  
 ✅ **Lyric display** for real-time song lyrics  
 ✅ **Shuffle mode** to mix up your playlist  
-✅ **Media keys support**  control playback (Play, Pause, Skip) even while using other apps
+✅ **Media keys support**  control playback (Play, Pause, Skip) even while using other apps  
 ✅ **Minimal and efficient** just music, no distractions  
 
 ## 🚀 How to Use
