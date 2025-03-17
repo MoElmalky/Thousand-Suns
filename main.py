@@ -185,32 +185,31 @@ def previous_song():
 
 def next_song():
     global cur_song, song_index, timer, songs_counter
-    pygm.music.stop()
-    if len(playlist)>1: 
+    if len(playlist)>1:
+        pygm.music.stop()
         if songs_counter < len(playlist) - 1:
             songs_counter += 1
-            if isshuffle:
-                if songs_counter<=len(played_songs)-1:
+            if songs_counter<=len(played_songs)-1:
                     song_index = played_songs[songs_counter]
-                else:
+            else:
+                if isshuffle:
                     song_index = random.choice([
                         i
                         for i in range(len(playlist))
                         if i not in played_songs
                     ])
                     played_songs.append(song_index)
-            else:
-                if song_index<len(playlist)-1:
+                elif song_index<len(playlist)-1:
                     song_index += 1
                     played_songs.append(song_index)
                 else:
                     new_playlist()
-        elif songs_counter >= len(playlist)-1 or (song_index >= len(playlist)-1 and not isshuffle):
+        else:
             new_playlist()
-    cur_song = playlist[song_index]
-    load_song()
-    update_song()
-    update_timer(timer)
+        cur_song = playlist[song_index]
+        load_song()
+        update_song()
+        update_timer(timer)
     if isplaying:
         play()
         
